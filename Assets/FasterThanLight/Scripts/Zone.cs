@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using static FTL.WaveScriptable;
@@ -8,106 +9,76 @@ namespace FTL
 {
     public class Zone : MonoBehaviour
     {
+        private List<ClickHit> clickHitList = new List<ClickHit>();
+
         [SerializeField]
-        private Button smallObjective;
+        private GameObject clickHitPrefab;
+
         [SerializeField]
-        private Button mediumObjective;
-        [SerializeField]
-        private Button largeObjective;
+        private Transform spawnClickHitTransform;
+
         [SerializeField]
         private ParticleSystem particles;
 
         private Color currentColor = Color.white;
 
+        public void InitializeObjectives(List<Objective> objectives)
+        {
+            clickHitList = new List<ClickHit>();
+
+            for (int i = 0; i < objectives.Count; i++)
+            {
+                ClickHit clickHit = Instantiate(clickHitPrefab, spawnClickHitTransform).GetComponent<ClickHit>();
+
+                clickHit.OnInitialize(this, objectives[i].scale, objectives[i].points);
+
+                clickHitList.Add(clickHit);
+            }
+        }
+
+        public void DeinitializeObjectives()
+        {
+            if (clickHitList != null || clickHitList.Count == 0)
+                return;
+
+            foreach (var item in clickHitList)
+            {
+                Destroy(item);
+            }
+            clickHitList.Clear();
+        }
+
         public bool IsFreeToEnable()
         {
-            return !smallObjective.gameObject.activeSelf && !mediumObjective.gameObject.activeSelf && !largeObjective.gameObject.activeSelf;
+            return !clickHitList.Any((x) => x.IsEnabled());
         }
 
         [System.Obsolete]
-        public void OnClick(string type)
+        public void OnClick(float scale, float points)
         {
-            VisualEffectPlay(type);
-            ScorePoints(type);
+            VisualEffectPlay();
+            GameManager.Instance.ScorePoint((int)points);
         }
 
         [System.Obsolete]
-        public void VisualEffectPlay(string type)
+        public void VisualEffectPlay()
         {
-            if (!string.IsNullOrEmpty(type))
-                GetObjective(type).gameObject.SetActive(false);
-            else
-                SetActiveButtons(false);
-
             particles.startColor = currentColor;
-
             particles.Play();
         }
 
-        public void ScorePoints(string type)
+        public void RevealObjective(int indexObjective)
         {
-            GameManager.Instance.ScorePoint(GetType(type));
-        }
-
-
-        public void RevealObjective(ObjectiveType type)
-        {
-            Button button = GetObjective(type);
             currentColor = GetRandomColor();
 
-            button.image.color = currentColor;
-            button.gameObject.SetActive(true);
+            clickHitList[indexObjective].Reveal(currentColor);
         }
 
-        public void SetActiveButtons(bool state)
+        public void HideButtons()
         {
-            smallObjective.gameObject.SetActive(state);
-            mediumObjective.gameObject.SetActive(state);
-            largeObjective.gameObject.SetActive(state);
-        }
-
-        private Button GetObjective(ObjectiveType type)
-        {
-            switch (type)
+            foreach (var clickHit in clickHitList)
             {
-                case ObjectiveType.SmallObjective:
-                    return smallObjective;
-                case ObjectiveType.MediumObjective:
-                    return mediumObjective;
-                case ObjectiveType.LargeObjective:
-                    return largeObjective;
-                default:
-                    return null;
-            }
-        }
-
-        private Button GetObjective(string type)
-        {
-            switch (type)
-            {
-                case "small":
-                    return smallObjective;
-                case "medium":
-                    return mediumObjective;
-                case "large":
-                    return largeObjective;
-                default:
-                    return null;
-            }
-        }
-
-        private ObjectiveType GetType(string type)
-        {
-            switch (type.ToLower())
-            {
-                case "small":
-                    return ObjectiveType.SmallObjective;
-                case "medium":
-                    return ObjectiveType.MediumObjective;
-                case "large":
-                    return ObjectiveType.LargeObjective;
-                default:
-                    return ObjectiveType.Invalid;
+                clickHit.Hide();
             }
         }
 

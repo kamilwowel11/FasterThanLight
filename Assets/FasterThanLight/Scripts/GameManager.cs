@@ -52,12 +52,11 @@ namespace FTL
             }
         }
 
-        public void ScorePoint(ObjectiveType type)
+        public void ScorePoint(int points)
         {
-            int score = GetScorePoints(type);
-            currentProgressBar += score;
+            currentProgressBar += points;
 
-            OnScoreUpdated?.Invoke(score);
+            OnScoreUpdated?.Invoke(points);
 
             if (IsItNextWave())
                 ProgressNextWave();
@@ -82,6 +81,8 @@ namespace FTL
             currentWaveScriptable = waves[currentWave];
 
             refreshRate = currentWaveScriptable.refreshRateOfCircle;
+
+            RefreshZones();
 
             OnWaveChanged?.Invoke(waves[currentWave].pointsToAdvance, lostPoints);
         }
@@ -109,27 +110,11 @@ namespace FTL
                 return;
             }
 
-            int randomIndex = UnityEngine.Random.Range(0, freeZones.Count);
+            int randomZone = UnityEngine.Random.Range(0, freeZones.Count);
 
-            int randomObjective = UnityEngine.Random.Range(0, currentWaveScriptable.enemiesInWave.Length);
-            ObjectiveType type = currentWaveScriptable.enemiesInWave[randomObjective];
+            int randomObjective = UnityEngine.Random.Range(0, currentWaveScriptable.objectives.Count);
 
-            freeZones[randomIndex].RevealObjective(type);
-        }
-
-        private int GetScorePoints(ObjectiveType type)
-        {
-            switch (type)
-            {
-                case ObjectiveType.SmallObjective:
-                    return 1;
-                case ObjectiveType.MediumObjective:
-                    return 2;
-                case ObjectiveType.LargeObjective:
-                    return 3;
-                default:
-                    return 0;
-            }
+            freeZones[randomZone].RevealObjective(randomObjective);
         }
 
         private void GameOver()
@@ -139,7 +124,10 @@ namespace FTL
             foreach (Zone zone in zones)
             {
                 if (!zone.IsFreeToEnable())
-                    zone.VisualEffectPlay("");
+                {
+                    zone.VisualEffectPlay();
+                    zone.HideButtons();
+                }
             }
 
             OnGameOver?.Invoke();
@@ -150,11 +138,6 @@ namespace FTL
             currentProgressBar = 0;
             lastToggleTime = 0;
 
-            foreach (Zone zone in zones)
-            {
-                zone.SetActiveButtons(false);
-            }
-
             if (waves.Count > 0)
             {
                 currentWave = 0;
@@ -163,7 +146,30 @@ namespace FTL
 
                 OnWaveChanged?.Invoke(currentWaveScriptable.pointsToAdvance, 0);
             }
+
+            RefreshZones();
+
             stopGame = false;
         }
+
+        private void RefreshZones()
+        {
+            foreach (Zone zone in zones)
+            {
+                zone.DeinitializeObjectives();
+
+                List<Objective> objectives = new List<Objective>();
+
+                foreach (var currentWave in waves[currentWave].objectives)
+                {
+                    objectives.Add(new Objective(currentWave.points, currentWave.scale));
+                }
+
+                zone.InitializeObjectives(objectives);
+                zone.HideButtons();
+            }
+        }
     }
+
+
 }

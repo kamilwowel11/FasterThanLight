@@ -12,6 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 215dd520ceaf6384da8f5dff21616296, type: 3}
   m_Name: Wave2
   m_EditorClassIdentifier: 
-  enemiesInWave: 0200000001000000
+  objectives:
+  - scale: 1.5
+    points: 1
+  - scale: 1
+    points: 2
   pointsToAdvance: 25
   refreshRateOfCircle: 0.8

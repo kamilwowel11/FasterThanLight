@@ -7,15 +7,20 @@ namespace FTL
     [CreateAssetMenu(fileName = "Wave1", menuName = "Wave Data/Wave")]
     public class WaveScriptable : ScriptableObject
     {
-        public enum ObjectiveType
-        {
-            SmallObjective,
-            MediumObjective,
-            LargeObjective,
-            Invalid
-        }
+        public List<Objective> objectives = new List<Objective>();
 
-        public ObjectiveType[] enemiesInWave;
+        [System.Serializable]
+        public class Objective
+        {
+            public Objective(float po, float sc)
+            {
+                points = po;
+                scale = sc;
+            }
+
+            public float scale;
+            public float points;
+        }
 
         public int pointsToAdvance;
 
